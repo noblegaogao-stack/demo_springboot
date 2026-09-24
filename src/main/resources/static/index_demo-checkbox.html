@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dynamic Checkboxes</title>
+    <!-- 引入 Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 按钮，点击后切换复选框列表的显示状态 -->
+    <button type="button" class="btn btn-primary mt-4 ms-4" id="toggleCheckboxes">显示复选框</button>
+    <!-- 隐藏的复选框列表容器 -->
+    <div id="checkboxContainer" class="container mt-4" style="display: none;">
+        <!-- 全选/全不选按钮 -->
+        <button type="button" class="btn btn-secondary mb-3" id="selectAll">全选/全不选</button>
+        <div class="row">
+            <!-- 左侧列 -->
+            <div class="col-md-6">
+                <div id="leftCheckboxes"></div>
+            </div>
+            <!-- 右侧列 -->
+            <div class="col-md-6">
+                <div id="rightCheckboxes"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Bootstrap 和 jQuery JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 模拟动态复选框数据
+            const checkboxData = ['选项 1', '选项 2', '选项 3', '选项 4', '选项 5', '选项 6'];
+            const leftCheckboxes = $('#leftCheckboxes');
+            const rightCheckboxes = $('#rightCheckboxes');
+
+            // 将数据分两列显示
+            const halfLength = Math.ceil(checkboxData.length / 2);
+            for (let i = 0; i < checkboxData.length; i++) {
+                // 为第一个复选框添加 checked 和 disabled 属性
+                const disabledAttr = i === 0 ? 'disabled' : '';
+                const checkedAttr = 'checked'; // 所有复选框默认选中
+                const checkbox = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="${checkboxData[i]}" id="checkbox${i}" ${checkedAttr} ${disabledAttr}>
+                        <label class="form-check-label" for="checkbox${i}">
+                            ${checkboxData[i]}
+                        </label>
+                    </div>
+                `;
+                if (i < halfLength) {
+                    leftCheckboxes.append(checkbox);
+                } else {
+                    rightCheckboxes.append(checkbox);
+                }
+            }
+
+            // 按钮点击事件，切换复选框列表的显示状态
+            $('#toggleCheckboxes').click(function() {
+                $('#checkboxContainer').toggle();
+            });
+
+            // 全选/全不选按钮点击事件，排除第一个复选框
+            $('#selectAll').click(function() {
+                const allChecked = $('.form-check-input:not(#checkbox0)').prop('checked');
+                $('.form-check-input:not(#checkbox0)').prop('checked', !allChecked);
+            });
+        });
+    </script>
+</body>
+</html>

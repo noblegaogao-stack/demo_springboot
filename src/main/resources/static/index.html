@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mermaid Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-5">
+    <div class="container">
+        <h2 class="mb-4">Mermaid 图表示例</h2>
+        <!-- 按钮区域 -->
+        <button id="show-flowchart" class="btn btn-primary me-2">显示流程图</button>
+        <button id="show-piechart" class="btn btn-primary me-2">显示饼图</button>
+        <button id="show-xychart" class="btn btn-primary me-2">显示 XY 图</button>
+        <!-- 新增显示雷达图按钮 -->
+        <button id="show-radarchart" class="btn btn-primary me-2">显示雷达图</button>
+        <button id="download-chart" class="btn btn-primary me-2">下载图表为图片</button>
+        <!-- 新增导出 Excel 按钮 -->
+        <button id="export-excel" class="btn btn-primary mb-3">导出 Excel</button>
+        <div id="diagram" class="border p-3 bg-light"></div>
+    </div>
+    <!-- 引入本地 mermaid.min.js -->
+    <script src="./lib/mermaid.min.js"></script>
+    <!-- 引入 xlsx 和 file-saver 库 -->
+    <script src="./lib/FileSaver.min.js"></script>
+    <script src="./lib/xlsx.full.min.js"></script>
+
+    <script>
+        // 初始化 mermaid
+        mermaid.initialize({ startOnLoad: false });
+
+        // 渲染图表的函数
+        const renderChart = async (chartType) => {
+            const url = chartType === 'flowchart' ? '/mermaid/flowchart' :
+                       chartType === 'piechart' ? '/mermaid/piechart' :
+                       chartType === 'xychart' ? '/mermaid/xychart' :
+                       chartType === 'radarchart' ? '/mermaid/radarchart' : '';
+            try {
+                const response = await fetch(url);
+                const data = await response.text();
+                document.getElementById('diagram').innerHTML = `<pre class="mermaid">${data}</pre>`;
+                mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+            } catch (error) {
+                console.error('Failed to render chart:', error);
+            }
+        };
+
+        // 下载图表为图片的函数
+        const downloadChartAsImage = async () => {
+            const mermaidElement = document.querySelector('.mermaid svg');
+            if (mermaidElement) {
+                const svgData = new XMLSerializer().serializeToString(mermaidElement);
+                // 对 SVG 数据进行 UTF-8 编码转换
+                const utf8Data = unescape(encodeURIComponent(svgData));
+                const base64Data = btoa(utf8Data);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'mermaid-chart.png';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }, 'image/png');
+                };
+                img.src = 'data:image/svg+xml;base64,' + base64Data;
+            }
+        };
+
+        // 检查 XLSX 对象是否存在
+        if (typeof XLSX === 'undefined') {
+            console.error('XLSX 库未正确加载');
+        } else {
+            console.log('XLSX 库加载成功');
+        }
+
+        // 导出 Excel 的函数
+        const exportToExcel = async () => {
+            const mermaidElement = document.querySelector('.mermaid svg');
+            if (mermaidElement) {
+                const svgData = new XMLSerializer().serializeToString(mermaidElement);
+                const utf8Data = unescape(encodeURIComponent(svgData));
+                const base64Data = btoa(utf8Data);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    canvas.toBlob((blob) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            if (typeof XLSX !== 'undefined') {
+                                const workbook = XLSX.utils.book_new();
+                                const worksheet = XLSX.utils.aoa_to_sheet([[]]);
+                                const imgData = reader.result.split(',')[1];
+                                const img = {
+                                    name: 'mermaid-chart.png',
+                                    data: imgData,
+                                    opts: {base64: true}
+                                };
+                                XLSX.add_image(workbook, img, 'Sheet1!A1', {
+                                    x: 0,
+                                    y: 0,
+                                    width: canvas.width,
+                                    height: canvas.height
+                                });
+                                XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+                                const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                                const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+                                console.log('Blob data:', data); // 添加日志输出
+                                saveAs(data, 'mermaid-chart.xlsx');
+                            } else {
+                                console.error('在导出 Excel 时，XLSX 库未正确加载');
+                            }
+                        };
+                        reader.readAsDataURL(blob);
+                    }, 'image/png');
+                };
+                img.src = 'data:image/svg+xml;base64,' + base64Data;
+            }
+        };
+
+        // 等待页面加载完成后添加按钮点击事件
+        window.addEventListener('load', () => {
+            const flowchartButton = document.getElementById('show-flowchart');
+            const piechartButton = document.getElementById('show-piechart');
+            const xychartButton = document.getElementById('show-xychart');
+            // 新增雷达图按钮
+            const radarchartButton = document.getElementById('show-radarchart');
+            const downloadButton = document.getElementById('download-chart');
+            const exportButton = document.getElementById('export-excel');
+
+            flowchartButton.addEventListener('click', () => renderChart('flowchart'));
+            piechartButton.addEventListener('click', () => renderChart('piechart'));
+            xychartButton.addEventListener('click', () => renderChart('xychart'));
+            // 新增雷达图按钮点击事件
+            radarchartButton.addEventListener('click', () => renderChart('radarchart'));
+            // 初始渲染流程图
+            renderChart('flowchart');
+        });
+    </script>
+</body>
+</html>
+
+

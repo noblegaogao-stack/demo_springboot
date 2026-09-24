@@ -1,0 +1,64 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.github.node-gradle.node' version '7.0.2'
+}
+
+group = 'org.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        // Use '=' for property assignment
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+node {
+    version = '20.12.2'          // 指定 Node.js 版本
+    npmVersion = '10.5.0'        // 可选，指定 npm 版本
+    download = true              // 自动下载 Node.js，而不是依赖系统安装
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    // 添加 spring-boot-starter-web 依赖
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+
+// Import the NpmTask class
+import com.github.gradle.node.npm.task.NpmTask
+
+// Register the task with a name
+tasks.register('installMermaidCli', NpmTask) {
+    args = ['install', '-g', '@mermaid-js/mermaid-cli']
+    // Ensure the task runs before any task that depends on mmdc
+    mustRunAfter 'npmInstall'
+}
+
+// Task to check if mmdc is installed
+//tasks.register('checkMermaidCli') {
+//    dependsOn 'checkMermaidCli'
+//    dependsOn 'installMermaidCli'
+//    doLast {
+//        def execResult = exec {
+//            commandLine 'which', 'mmdc'
+//            ignoreExitValue = true
+//        }
+//        if (execResult.exitValue != 0) {
+//            throw new GradleException("mmdc is not installed correctly.")
+//        }
+//    }
+//}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
